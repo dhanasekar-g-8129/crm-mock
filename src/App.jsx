@@ -11,11 +11,16 @@ const AGENT_CATALOG = [
   { id: "sc", name: "Sales Coach", description: "Gives deal-level coaching and next-best-action tips.", avatar: "🧠", color: "#059669", params: ["dealValue", "dealStage", "ownerName"] },
 ];
 
-const CRM_FIELDS = [
-  "Status", "Lead Score", "ClosingDate", "Company", "Website", "Industry",
-  "Email", "Phone", "Lead Source", "Annual Revenue", "Deal Name", "Stage",
-  "Amount", "Lead Owner", "Last Activity Time", "Created Time", "Modified Time",
-];
+const CRM_MODULES = {
+  Leads: ["Status", "Lead Score", "Company", "Website", "Industry", "Email", "Phone", "Lead Source", "Lead Owner", "Annual Revenue", "Last Activity Time", "Created Time", "Modified Time"],
+  Contacts: ["First Name", "Last Name", "Email", "Phone", "Mailing City", "Account Name", "Department", "Title", "Created Time"],
+  Accounts: ["Account Name", "Website", "Industry", "Annual Revenue", "Phone", "Billing City", "Employees", "Account Owner"],
+  Deals: ["Deal Name", "Stage", "Amount", "Closing Date", "Probability", "Deal Owner", "Account Name", "Contact Name", "Created Time"],
+  Campaigns: ["Campaign Name", "Type", "Status", "Start Date", "End Date", "Expected Revenue", "Budgeted Cost"],
+  Products: ["Product Name", "Product Code", "Unit Price", "Qty In Stock", "Description", "Manufacturer"],
+};
+
+const CRM_MODULE_NAMES = Object.keys(CRM_MODULES);
 
 const ACTIVITY_LOG = [
   { date: "Mar 24, 2025 · 7:00 PM", title: "Followed up", detail: "Sent a follow-up email about the Max Product pricing tier." },
@@ -308,9 +313,12 @@ function NameRelatedListModal({ agent, onSave, onBack }) {
   const defaultName = agent.name.replace(/\s*Agent\s*$/i, "").trim();
   const [name, setName] = useState(defaultName);
   const [mappings, setMappings] = useState(
-    () => (agent.params || []).map(p => ({ param: p, crmField: "" }))
+    () => (agent.params || []).map(p => ({ param: p, module: "", crmField: "" }))
   );
-  const updateMapping = (idx, value) => {
+  const updateMappingModule = (idx, value) => {
+    setMappings(m => m.map((row, i) => i === idx ? { ...row, module: value, crmField: "" } : row));
+  };
+  const updateMappingField = (idx, value) => {
     setMappings(m => m.map((row, i) => i === idx ? { ...row, crmField: value } : row));
   };
 
@@ -327,7 +335,7 @@ function NameRelatedListModal({ agent, onSave, onBack }) {
       zIndex: 200,
     }}>
       <div style={{
-        background: "#fff", borderRadius: 8, width: 620,
+        background: "#fff", borderRadius: 8, width: 780,
         maxHeight: "88vh", display: "flex", flexDirection: "column",
         boxShadow: "0 8px 30px rgba(0,0,0,0.18)", ...S.font,
       }}>
@@ -389,7 +397,7 @@ function NameRelatedListModal({ agent, onSave, onBack }) {
 
             {/* Column headers */}
             <div style={{
-              display: "grid", gridTemplateColumns: "1fr 32px 1fr",
+              display: "grid", gridTemplateColumns: "1fr 32px 1fr 8px 1fr",
               alignItems: "center", padding: "8px 0", marginBottom: 2,
               borderBottom: `2px solid ${zohoBorder}`,
             }}>
@@ -398,14 +406,18 @@ function NameRelatedListModal({ agent, onSave, onBack }) {
               </span>
               <span />
               <span style={{ fontSize: 11, fontWeight: 700, color: zohoBlue, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                CRM Field
+                Module
+              </span>
+              <span />
+              <span style={{ fontSize: 11, fontWeight: 700, color: zohoBlue, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Field
               </span>
             </div>
 
             {/* Mapping rows */}
             {mappings.map((row, i) => (
               <div key={i} style={{
-                display: "grid", gridTemplateColumns: "1fr 32px 1fr",
+                display: "grid", gridTemplateColumns: "1fr 32px 1fr 8px 1fr",
                 alignItems: "center", padding: "10px 0",
                 borderBottom: i < mappings.length - 1 ? `1px solid #EDF0F5` : "none",
               }}>
@@ -432,14 +444,14 @@ function NameRelatedListModal({ agent, onSave, onBack }) {
                   </svg>
                 </div>
 
-                {/* CRM field dropdown */}
+                {/* Module dropdown */}
                 <select
-                  value={row.crmField}
-                  onChange={e => updateMapping(i, e.target.value)}
+                  value={row.module}
+                  onChange={e => updateMappingModule(i, e.target.value)}
                   style={{
                     padding: "7px 10px",
                     border: `1px solid ${zohoBorder}`, borderRadius: 4,
-                    fontSize: 12.5, color: row.crmField ? zohoText : "#AAA",
+                    fontSize: 12.5, color: row.module ? zohoText : "#AAA",
                     background: "#fff", outline: "none", cursor: "pointer",
                     fontFamily: "'Geist', sans-serif",
                     transition: "border-color 0.15s, box-shadow 0.15s",
@@ -448,8 +460,36 @@ function NameRelatedListModal({ agent, onSave, onBack }) {
                   onFocus={e => { e.target.style.borderColor = zohoBlue; e.target.style.boxShadow = `0 0 0 2px ${zohoBlue}22`; }}
                   onBlur={e => { e.target.style.borderColor = zohoBorder; e.target.style.boxShadow = "none"; }}
                 >
-                  <option value="" disabled>Select CRM field</option>
-                  {CRM_FIELDS.map(f => (
+                  <option value="" disabled>Select module</option>
+                  {CRM_MODULE_NAMES.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+
+                {/* Spacer */}
+                <span />
+
+                {/* Field dropdown (enabled only after module is selected) */}
+                <select
+                  value={row.crmField}
+                  onChange={e => updateMappingField(i, e.target.value)}
+                  disabled={!row.module}
+                  style={{
+                    padding: "7px 10px",
+                    border: `1px solid ${zohoBorder}`, borderRadius: 4,
+                    fontSize: 12.5, color: row.crmField ? zohoText : "#AAA",
+                    background: row.module ? "#fff" : "#F7F9FC", outline: "none",
+                    cursor: row.module ? "pointer" : "not-allowed",
+                    fontFamily: "'Geist', sans-serif",
+                    transition: "border-color 0.15s, box-shadow 0.15s",
+                    appearance: "auto",
+                    opacity: row.module ? 1 : 0.6,
+                  }}
+                  onFocus={e => { e.target.style.borderColor = zohoBlue; e.target.style.boxShadow = `0 0 0 2px ${zohoBlue}22`; }}
+                  onBlur={e => { e.target.style.borderColor = zohoBorder; e.target.style.boxShadow = "none"; }}
+                >
+                  <option value="" disabled>{row.module ? "Select field" : "Select module first"}</option>
+                  {(row.module ? CRM_MODULES[row.module] || [] : []).map(f => (
                     <option key={f} value={f}>{f}</option>
                   ))}
                 </select>
