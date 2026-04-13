@@ -1142,12 +1142,16 @@ export default function ZohoAgentWidgetMockup() {
             <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#9CA3AF" strokeWidth="1.3"/><path d="M10 10L13 13" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round"/></svg>
             <span style={{ fontSize: 11.5, color: "#9CA3AF" }}>Search records</span>
           </div>
-          {["＋","ZA","🔔","📅","💬","⚙️"].map((ic,i) => (
+          {["＋","ZA","🔔","📅","💬"].map((ic,i) => (
             <div key={i} style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 12, color: "#6B7280" }}
               onMouseEnter={e => e.currentTarget.style.background = "#F4F6FA"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >{ic}</div>
           ))}
+          <a href="#/agent-config" title="Agent Response Mapping" style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 12, color: "#6B7280", textDecoration: "none" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#F4F6FA"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >⚙️</a>
           <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg,#3B82F6,#8B5CF6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff", cursor: "pointer" }}>SJ</div>
           <span style={{ fontSize: 13, color: "#9CA3AF", cursor: "pointer" }}>⠿</span>
         </div>
