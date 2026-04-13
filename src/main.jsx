@@ -12,7 +12,8 @@ function Router() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  if (path === "#/agent-config") return <AgentConfig />;
+  const configMatch = path.match(/^#\/agent-config\/(.+)$/);
+  if (configMatch) return <AgentConfig agentId={configMatch[1]} />;
   return <App />;
 }
 

@@ -405,21 +405,29 @@ function SavedConfigCard({ config, onEdit, onDelete }) {
 /* ─────────────────────────────────────────────
    MAIN CONFIG PAGE
 ───────────────────────────────────────────── */
-export default function AgentConfig() {
+export default function AgentConfig({ agentId }) {
+  const agent = AGENTS.find(a => a.id === agentId);
+
   const [savedConfigs, setSavedConfigs] = useState([]);
   const [editing, setEditing] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
 
   // Config form state
-  const [selectedAgent, setSelectedAgent] = useState(null);
   const [selectedModule, setSelectedModule] = useState("");
   const [mappings, setMappings] = useState([]);
   const [strategy, setStrategy] = useState({ type: "realtime" });
 
+  const initMappings = (ag) => ag.responseFields.map(rf => ({
+    key: rf.key,
+    target: "existing",
+    fieldName: "",
+    customPrompt: "",
+    showCustom: false,
+  }));
+
   const resetForm = () => {
-    setSelectedAgent(null);
     setSelectedModule("");
-    setMappings([]);
+    setMappings(agent ? initMappings(agent) : []);
     setStrategy({ type: "realtime" });
     setEditing(false);
     setEditIndex(null);
@@ -427,30 +435,17 @@ export default function AgentConfig() {
 
   const startNew = () => {
     resetForm();
+    setMappings(agent ? initMappings(agent) : []);
     setEditing(true);
   };
 
   const startEdit = (index) => {
     const cfg = savedConfigs[index];
-    const agent = AGENTS.find(a => a.id === cfg.agentId);
-    setSelectedAgent(agent);
     setSelectedModule(cfg.module);
     setMappings(cfg.mappings);
     setStrategy(cfg.strategy);
     setEditIndex(index);
     setEditing(true);
-  };
-
-  const handleSelectAgent = (agent) => {
-    setSelectedAgent(agent);
-    setSelectedModule("");
-    setMappings(agent.responseFields.map(rf => ({
-      key: rf.key,
-      target: "existing",
-      fieldName: "",
-      customPrompt: "",
-      showCustom: false,
-    })));
   };
 
   const handleSelectModule = (mod) => {
@@ -465,7 +460,7 @@ export default function AgentConfig() {
 
   const handleSave = () => {
     const config = {
-      agentId: selectedAgent.id,
+      agentId: agent.id,
       module: selectedModule,
       mappings: [...mappings],
       strategy: { ...strategy },
@@ -482,7 +477,20 @@ export default function AgentConfig() {
     setSavedConfigs(c => c.filter((_, i) => i !== index));
   };
 
-  const canSave = selectedAgent && selectedModule && mappings.some(m => m.fieldName);
+  const canSave = selectedModule && mappings.some(m => m.fieldName);
+
+  if (!agent) {
+    return (
+      <div style={{ fontFamily: "'Geist', sans-serif", minHeight: "100vh", background: "#F4F6FA", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <link href={FONT_LINK} rel="stylesheet" />
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 42, marginBottom: 12 }}>⚠️</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 8 }}>Agent not found</div>
+          <a href="#/" style={{ fontSize: 13, color: C.blue }}>← Back to CRM</a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: "'Geist', sans-serif", minHeight: "100vh", background: "#F4F6FA" }}>
@@ -509,7 +517,7 @@ export default function AgentConfig() {
         <span style={{ color: "rgba(255,255,255,0.3)", margin: "0 4px" }}>/</span>
         <span style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>Settings</span>
         <span style={{ color: "rgba(255,255,255,0.3)", margin: "0 4px" }}>/</span>
-        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>Agent Response Mapping</span>
+        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>{agent.name} — Response Mapping</span>
         <div style={{ flex: 1 }} />
         <a href="#/" style={{
           fontSize: 12, color: "rgba(255,255,255,0.6)", textDecoration: "none",
@@ -530,12 +538,24 @@ export default function AgentConfig() {
           marginBottom: 28,
         }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.02em" }}>
-              Agent Response Mapping
-            </h1>
-            <p style={{ fontSize: 13.5, color: C.secondary, marginTop: 6, lineHeight: 1.5 }}>
-              Configure how AI agent responses are stored in your CRM fields. Choose the module,
-              map response fields, and set update strategies.
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: `${agent.color}12`, display: "flex",
+                alignItems: "center", justifyContent: "center", fontSize: 22,
+              }}>{agent.avatar}</div>
+              <div>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.02em" }}>
+                  {agent.name}
+                </h1>
+                <p style={{ fontSize: 13, color: C.secondary, marginTop: 2, margin: 0 }}>
+                  {agent.description}
+                </p>
+              </div>
+            </div>
+            <p style={{ fontSize: 13.5, color: C.secondary, marginTop: 10, lineHeight: 1.5 }}>
+              Configure how this agent's responses are stored in your CRM fields. Choose the module,
+              map response fields, and set the update strategy.
             </p>
           </div>
           {!editing && (
@@ -560,13 +580,13 @@ export default function AgentConfig() {
             background: C.white, border: `2px dashed ${C.border}`, borderRadius: 12,
             padding: "60px 20px", textAlign: "center",
           }}>
-            <div style={{ fontSize: 42, marginBottom: 12 }}>🤖</div>
+            <div style={{ fontSize: 42, marginBottom: 12 }}>{agent.avatar}</div>
             <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6 }}>
-              No agent configurations yet
+              No configurations for {agent.name} yet
             </div>
             <div style={{ fontSize: 13, color: C.secondary, marginBottom: 20, lineHeight: 1.5 }}>
-              Set up how agent responses flow into your CRM fields.<br />
-              Choose an agent, pick a module, and map the fields.
+              Set up how this agent's responses flow into your CRM fields.<br />
+              Pick a module, map the fields, and choose an update strategy.
             </div>
             <button onClick={startNew} style={{
               padding: "10px 24px", border: "none", borderRadius: 7,
@@ -611,51 +631,8 @@ export default function AgentConfig() {
 
             <div style={{ padding: "24px" }}>
 
-              {/* ── Step 1: Choose Agent ── */}
+              {/* ── Step 1: Choose Module ── */}
               <div style={{ marginBottom: 28 }}>
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 8, marginBottom: 12,
-                }}>
-                  <div style={{
-                    width: 22, height: 22, borderRadius: "50%", background: selectedAgent ? C.green : C.blue,
-                    color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, fontWeight: 700,
-                  }}>{selectedAgent ? "✓" : "1"}</div>
-                  <span style={{ fontWeight: 600, fontSize: 13.5, color: C.text }}>Choose Agent</span>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-                  {AGENTS.map(agent => (
-                    <button key={agent.id} onClick={() => handleSelectAgent(agent)} style={{
-                      display: "flex", alignItems: "flex-start", gap: 12,
-                      padding: "14px 16px", textAlign: "left",
-                      border: `1.5px solid ${selectedAgent?.id === agent.id ? agent.color : C.border}`,
-                      borderRadius: 8,
-                      background: selectedAgent?.id === agent.id ? `${agent.color}06` : C.white,
-                      cursor: "pointer", transition: "all 0.12s",
-                      ...S.font,
-                    }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 8,
-                        background: `${agent.color}12`, display: "flex",
-                        alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0,
-                      }}>{agent.avatar}</div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{agent.name}</div>
-                        <div style={{ fontSize: 11.5, color: C.secondary, marginTop: 2, lineHeight: 1.4 }}>
-                          {agent.description}
-                        </div>
-                        <div style={{ fontSize: 10.5, color: agent.color, marginTop: 4, fontWeight: 600 }}>
-                          {agent.responseFields.length} response fields
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── Step 2: Choose Module ── */}
-              {selectedAgent && (
-                <div style={{ marginBottom: 28 }}>
                   <div style={{
                     display: "flex", alignItems: "center", gap: 8, marginBottom: 12,
                   }}>
@@ -663,7 +640,7 @@ export default function AgentConfig() {
                       width: 22, height: 22, borderRadius: "50%", background: selectedModule ? C.green : C.blue,
                       color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 11, fontWeight: 700,
-                    }}>{selectedModule ? "✓" : "2"}</div>
+                  }}>{selectedModule ? "✓" : "1"}</div>
                     <span style={{ fontWeight: 600, fontSize: 13.5, color: C.text }}>Choose Module</span>
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -679,10 +656,9 @@ export default function AgentConfig() {
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* ── Step 3: Map Response Fields ── */}
-              {selectedAgent && selectedModule && (
+              {/* ── Step 2: Map Response Fields ── */}
+              {selectedModule && (
                 <div style={{ marginBottom: 4 }}>
                   <div style={{
                     display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
@@ -692,7 +668,7 @@ export default function AgentConfig() {
                       background: mappings.some(m => m.fieldName) ? C.green : C.blue,
                       color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 11, fontWeight: 700,
-                    }}>{mappings.some(m => m.fieldName) ? "✓" : "3"}</div>
+                    }}>{mappings.some(m => m.fieldName) ? "✓" : "2"}</div>
                     <span style={{ fontWeight: 600, fontSize: 13.5, color: C.text }}>Map Response Fields</span>
                     <span style={{ fontSize: 11.5, color: C.secondary }}>
                       — Map agent outputs to <strong>{selectedModule}</strong> fields
@@ -714,19 +690,19 @@ export default function AgentConfig() {
                       <span style={{ ...S.label, color: C.blue }}>CRM Field</span>
                     </div>
 
-                    {selectedAgent.responseFields.map((rf, i) => (
+                    {agent.responseFields.map((rf, i) => (
                       <FieldMappingRow
                         key={rf.key}
                         responseField={rf}
                         mapping={mappings[i]}
                         module={selectedModule}
-                        agentColor={selectedAgent.color}
+                        agentColor={agent.color}
                         onUpdate={(m) => updateMapping(i, m)}
                       />
                     ))}
                   </div>
 
-                  {/* ── Step 4: Update Strategy ── */}
+                  {/* ── Step 3: Update Strategy ── */}
                   <div style={{ marginTop: 24 }}>
                     <div style={{
                       display: "flex", alignItems: "center", gap: 8, marginBottom: 2,
@@ -736,7 +712,7 @@ export default function AgentConfig() {
                         background: C.blue,
                         color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 11, fontWeight: 700,
-                      }}>4</div>
+                      }}>3</div>
                       <span style={{ fontWeight: 600, fontSize: 13.5, color: C.text }}>Update Strategy</span>
                     </div>
                   </div>
